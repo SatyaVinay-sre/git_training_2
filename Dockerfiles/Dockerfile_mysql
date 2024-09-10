@@ -1,8 +1,19 @@
-#FROM mysql:8.0.31
+# Use the public MySQL image
 FROM public.ecr.aws/docker/library/mysql:8.0.31
+
+# Set MySQL environment variables
 ENV MYSQL_ROOT_PASSWORD=wiley123
 ENV MYSQL_DATABASE=orderbook
 ENV MYSQL_USER=wiley
 ENV MYSQL_PASSWORD=wiley123
 
-COPY src/mysql/init /docker-entrypoint-initdb.d/ 
+# Copy initialization scripts
+COPY src/mysql/init /docker-entrypoint-initdb.d/
+
+# Copy additional MySQL configuration file
+COPY src/mysql/my-custom.cnf /etc/mysql/conf.d/my-custom.cnf
+
+# MySQL options to enable slow query logging
+ENV MYSQL_SLOW_QUERY_LOG=1
+ENV MYSQL_SLOW_QUERY_LOG_FILE=/var/log/mysql/slow-queries.log
+ENV MYSQL_LONG_QUERY_TIME=2
