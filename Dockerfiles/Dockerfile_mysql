@@ -23,6 +23,6 @@ ENV MYSQL_SLOW_QUERY_LOG_FILE=/var/log/mysql/slow-queries.log
 ENV MYSQL_LONG_QUERY_TIME=2
 
 # Required for PVC 
-RUN sudo chown -R 1001:1001 /bitnami/mysql/data
-RUN sudo chmod -R 755 /bitnami/mysql/data
+RUN chown -R 1001:1001 /bitnami/mysql/data
+RUN chmod -R 755 /bitnami/mysql/data
 
