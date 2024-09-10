@@ -30,6 +30,18 @@ pipeline {
         }
       }
     }
+
+    stage('Build and Publish DB-replica') {
+      steps {
+        container(name: 'kaniko') {
+          sh '''
+            echo \'{ "credsStore": "ecr-login" }\' > /kaniko/.docker/config.json
+            /kaniko/executor -f `pwd`/Dockerfiles/Dockerfile_replica -c `pwd` --insecure --skip-tls-verify --cache=false --cleanup --destination=${ECR_REPO}:${JOB_NAME}db-dev-${BUILD_NUMBER}
+          '''
+        }
+      }
+    }
+    
     
     stage('Build and Publish API') {
       steps {
