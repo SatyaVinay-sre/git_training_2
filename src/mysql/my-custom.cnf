@@ -1,4 +1,9 @@
 [mysqld]
-server_id = 1
-log_bin = mysql-bin
-binlog_format = ROW
+# Enable slow query log
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/slow-queries.log
+long_query_time=2
+
+# Replication settings (typically set on the master and slave as appropriate)
+server-id=1
+log-bin=mysql-bin
