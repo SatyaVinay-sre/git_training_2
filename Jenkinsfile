@@ -11,7 +11,7 @@ pipeline {
     
     stage('Build Trading Front End') {
       steps {
-        //container(name: 'kaniko') {
+        container(name: 'kaniko') {
           sh '''
             echo \'{ "credsStore": "ecr-login" }\' > /kaniko/.docker/config.json
             /kaniko/executor -f `pwd`/Dockerfiles/Dockerfile_nginx -c `pwd` --insecure --skip-tls-verify --cache=false --cleanup --destination=${ECR_REPO}:${JOB_NAME}fe-dev-${BUILD_NUMBER}
@@ -22,7 +22,7 @@ pipeline {
     
     stage('Build and Publish DB') {
       steps {
-        //container(name: 'kaniko') {
+        container(name: 'kaniko') {
           sh '''
             echo \'{ "credsStore": "ecr-login" }\' > /kaniko/.docker/config.json
             /kaniko/executor -f `pwd`/Dockerfiles/Dockerfile_mysql -c `pwd` --insecure --skip-tls-verify --cache=false --cleanup --destination=${ECR_REPO}:${JOB_NAME}db-dev-${BUILD_NUMBER}
@@ -33,7 +33,7 @@ pipeline {
     
     stage('Build and Publish API') {
       steps {
-        //container(name: 'kaniko') {
+        container(name: 'kaniko') {
           sh '''
             echo \'{ "credsStore": "ecr-login" }\' > /kaniko/.docker/config.json
             /kaniko/executor -f `pwd`/Dockerfiles/Dockerfile_fastapi -c `pwd` --insecure --skip-tls-verify --cache=false --cleanup --destination=${ECR_REPO}:${JOB_NAME}api-dev-${BUILD_NUMBER}
