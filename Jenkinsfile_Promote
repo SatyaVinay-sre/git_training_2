@@ -44,7 +44,7 @@ pipeline {
             echo $API_build_num
             DB_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}db')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
             FE_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}fe')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
-            REP_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}fe')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
+            RE_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}fe')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
 
             APIMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}api-dev-${API_build_num} --query 'images[].imageManifest' --output text)
             DBMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}db-dev-${DB_build_num} --query 'images[].imageManifest' --output text)
