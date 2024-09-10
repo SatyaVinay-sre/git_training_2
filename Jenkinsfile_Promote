@@ -44,9 +44,13 @@ pipeline {
             echo $API_build_num
             DB_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}db')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
             FE_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}fe')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
+            REP_build_num=$(aws ecr list-images --repository-name production-support-course  --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, '${COURSE}${TEAM}fe')].imageTag" --output text | sed "s/\\t/\\n/g" | sed "s/-/ /g" | sort -k3,3n | tail -1 | awk '{print $3}')
+
             APIMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}api-dev-${API_build_num} --query 'images[].imageManifest' --output text)
             DBMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}db-dev-${DB_build_num} --query 'images[].imageManifest' --output text)
             FEMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}fe-dev-${FE_build_num} --query 'images[].imageManifest' --output text)
+            REMANIFEST=$(aws ecr batch-get-image --repository-name production-support-course --image-ids imageTag=${COURSE}${TEAM}replica-dev-${RE_build_num} --query 'images[].imageManifest' --output text)
+
 
             # Check API
             if [ $(aws ecr describe-images --repository-name production-support-course | grep "${COURSE}${TEAM}api-prod-${API_build_num}" | wc -l) -eq 0 ]
@@ -66,7 +70,17 @@ pipeline {
                 exitvalue="2"
               fi
             fi
-            
+
+            # Replicate DB
+            if [ $(aws ecr describe-images --repository-name production-support-course | grep "${COURSE}${TEAM}replica-prod-${RE_build_num}" | wc -l) -eq 0 ]
+            then
+              # We don't have uat so tag Dev to prod
+              if ! aws ecr put-image --repository-name production-support-course --image-tag "${COURSE}${TEAM}replica-prod-${RE_build_num}" --image-manifest "$REMANIFEST"
+              then
+                exitvalue="2"
+              fi
+            fi
+
             # Check Front End
             if [ $(aws ecr describe-images --repository-name production-support-course | grep "${COURSE}${TEAM}fe-prod-${FE_build_num}" | wc -l) -eq 0 ]
             then
