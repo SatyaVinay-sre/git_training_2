@@ -12,7 +12,7 @@ ENV MYSQL_REPLICATION_PASSWORD=wiley123
 
 
 # Copy initialization scripts
-COPY src/mysql/init /docker-entrypoint-initdb.d/
+#COPY src/mysql/init /docker-entrypoint-initdb.d/
 
 # Copy additional MySQL configuration file
 #COPY src/mysql/my-custom.cnf /etc/mysql/conf.d/my-custom.cnf
