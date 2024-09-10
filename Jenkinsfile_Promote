@@ -28,7 +28,6 @@ pipeline {
           container(name: 'awscli') {
             sh '''
             #!/bin/bash
-             kubectl get pods -A
              # Check if COURSE or TEAM parameters are empty
                 if [ -z "$COURSE" ]; then
                     echo "ERROR: COURSE parameter must be provided."
