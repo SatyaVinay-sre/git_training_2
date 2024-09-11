@@ -1,2 +1,0 @@
-CREATE USER IF NOT EXISTS 'replicator'@'%' IDENTIFIED BY 'wiley123';
-GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%';
