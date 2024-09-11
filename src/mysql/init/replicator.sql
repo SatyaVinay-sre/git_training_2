@@ -1,2 +1,2 @@
-CREATE USER IF NOT EXISTS 'replicator'@'%' IDENTIFIED WITH mysql_native_password BY 'wiley123';
+CREATE USER IF NOT EXISTS 'replicator'@'%' IDENTIFIED BY 'wiley123';
 GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%';
