@@ -1,5 +1,5 @@
 # Use the public MySQL image
-FROM public.ecr.aws/docker/library/mysql:8.0.31
+FROM public.ecr.aws/bitnami/mysql:8.0
 
 ENV MYSQL_ROOT_PASSWORD=wiley123
 ENV MYSQL_PASSWORD=wiley123
@@ -15,10 +15,13 @@ ENV MYSQL_REPLICATION_PASSWORD=wiley123
 COPY src/mysql/init /docker-entrypoint-initdb.d/
 
 # Copy additional MySQL configuration file
-COPY src/mysql/my-custom.cnf /etc/mysql/conf.d/my-custom.cnf
+#COPY src/mysql/my-custom.cnf /etc/mysql/conf.d/my-custom.cnf
 
 # MySQL options to enable slow query logging
 ENV MYSQL_SLOW_QUERY_LOG=1
 ENV MYSQL_SLOW_QUERY_LOG_FILE=/var/log/mysql/slow-queries.log
 ENV MYSQL_LONG_QUERY_TIME=2
 
+# Required for PVC 
+
+RUN chmod -R 755 /bitnami/mysql/data
