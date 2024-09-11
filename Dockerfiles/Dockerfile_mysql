@@ -5,20 +5,8 @@ ENV MYSQL_ROOT_PASSWORD=wiley123
 ENV MYSQL_PASSWORD=wiley123
 ENV MYSQL_USER=wiley
 ENV MYSQL_DATABASE=orderbook
-# Set the replication user and password
-ENV MYSQL_REPLICATION_MODE=master
-ENV MYSQL_REPLICATION_USER=replicator 
-ENV MYSQL_REPLICATION_PASSWORD=wiley123
 
 
 # Copy initialization scripts
 COPY src/mysql/init /docker-entrypoint-initdb.d/
-
-# Copy additional MySQL configuration file
-#COPY src/mysql/my-custom.cnf /etc/mysql/conf.d/my-custom.cnf
-
-# MySQL options to enable slow query logging
-ENV MYSQL_SLOW_QUERY_LOG=1
-ENV MYSQL_SLOW_QUERY_LOG_FILE=/var/log/mysql/slow-queries.log
-ENV MYSQL_LONG_QUERY_TIME=2
 
