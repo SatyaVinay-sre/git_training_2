@@ -61,10 +61,10 @@ def set_loggers():
     fix_logger.addHandler(fix_queue_handler)
     
     # File handler for logging to file
-    fix_file_handler = TimedRotatingFileHandler('/logs-volume/fixlogs/fixlogs.log', when="M", backupCount=10)
-    fix_file_handler.setLevel(logging.DEBUG)
+    #fix_file_handler = TimedRotatingFileHandler('/logs-volume/fixlogs/fixlogs.log', when="M", backupCount=10)
+    #fix_file_handler.setLevel(logging.DEBUG)
     fix_formatter = logging.Formatter('%(message)s')
-    fix_file_handler.setFormatter(fix_formatter)
+    #fix_file_handler.setFormatter(fix_formatter)
     
     # Stream handler for logging to stdout (for Loki)
     fix_stdh = logging.StreamHandler(sys.stdout)
@@ -72,13 +72,15 @@ def set_loggers():
     fix_stdh.setFormatter(fix_formatter)
     
     # Queue listener: only use stream handler (stdout) and file handler
-    fix_listener = QueueListener(fix_queue, fix_stdh, fix_file_handler, respect_handler_level=True)
+    fix_listener = QueueListener(fix_queue, fix_stdh, respect_handler_level=True)
+
+    # Disable propagation to avoid duplicate logs on stdout
+    fix_logger.propagate = False
     
     # Start the listener
     fix_listener.start()
     
-    # Disable propagation to avoid duplicate logs on stdout
-    fix_logger.propagate = False
+
 
     # general logger
     queue = Queue(-1)
