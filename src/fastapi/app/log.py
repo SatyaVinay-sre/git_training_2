@@ -67,12 +67,12 @@ def set_loggers():
     #fix_file_handler.setFormatter(fix_formatter)
     
     # Stream handler for logging to stdout (for Loki)
-    fix_stdh = logging.StreamHandler(sys.stdout)
-    fix_stdh.setLevel(logging.DEBUG)
-    fix_stdh.setFormatter(fix_formatter)
+    #fix_stdh = logging.StreamHandler(sys.stdout)
+    #fix_stdh.setLevel(logging.DEBUG)
+    #fix_stdh.setFormatter(fix_formatter)
     
     # Queue listener: only use stream handler (stdout) and file handler
-    fix_listener = QueueListener(fix_queue, fix_stdh, respect_handler_level=True)
+    fix_listener = QueueListener(fix_queue, respect_handler_level=True)
 
     # Disable propagation to avoid duplicate logs on stdout
     fix_logger.propagate = False
