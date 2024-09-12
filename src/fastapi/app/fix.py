@@ -147,7 +147,7 @@ class Fix(FixDecoder):
         #)
 
         print(json.dumps(msg_data))
-        print(json.dumps(self.fix_to_dict(msg_data))
+        print(json.dumps(self.fix_to_dict(msg_data)))
 
     #def logfile(self) -> str:
         #"""
