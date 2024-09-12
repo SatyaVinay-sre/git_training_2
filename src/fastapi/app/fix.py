@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import datetime
-from multiprocessing import Queue
+#from multiprocessing import Queue
 import json
 import logging
 
@@ -14,7 +14,7 @@ class FixMessages:
     is_login: bool = False
 
     def log(self, msg): # this is overriden in children class
-        print(msg)
+        pass
 
 
     def new_order(self, stock: str="AAPL", qty: int = 1, order_id: int=1, side: int=1, price: float=1.0 ):
@@ -146,9 +146,9 @@ class Fix(FixDecoder):
             extra={'tags':{'type':"fixlogs-decoded"}}
         )
 
-    def logfile(self) -> str:
-        """
-        function returns a string of the current file to write fix logs too
+    #def logfile(self) -> str:
+        #"""
+        #function returns a string of the current file to write fix logs too
 
-        """
-        return f'{self.logDir}{self.logName}{self.logExt}'
+        #"""
+        #return f'{self.logDir}{self.logName}{self.logExt}'
