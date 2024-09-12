@@ -64,11 +64,11 @@ def set_loggers():
     fix_formatter = logging.Formatter('%(message)s')
     fix_file_handler.setFormatter(fix_formatter)
     
-    fix_stdh = logging.StreamHandler(sys.stdout)
-    fix_stdh.setLevel(logging.DEBUG)
-    fix_stdh.setFormatter(fix_formatter)
+    #fix_stdh = logging.StreamHandler(sys.stdout)
+    #fix_stdh.setLevel(logging.DEBUG)
+    #fix_stdh.setFormatter(fix_formatter)
     
-    fix_listener = QueueListener(fix_queue, fix_stdh, fix_file_handler,respect_handler_level=True)
+    fix_listener = QueueListener(fix_queue, fix_file_handler,respect_handler_level=True)
     fix_listener.start()
 
     # general logger
