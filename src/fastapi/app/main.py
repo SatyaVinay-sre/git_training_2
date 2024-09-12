@@ -16,11 +16,7 @@ from sqlalchemy import exc
 import logging
 from app.log import set_loggers
 from app.fix import Fix
-set_loggers()
-fix = Fix()
-fix.login()
-logger = logging.getLogger('general')
-http_logger = logging.getLogger('http')
+
 
 # Redis DB cache
 import redis
@@ -41,25 +37,25 @@ app.add_middleware(
 # setup complete flag
 setup_complete = False
 
+
+fix = None
+logger = None
+http_logger = None
+
 # custom middleware
 @app.middleware("http")
 async def do_heartbeat_and_loki(request: Request, call_next):
     global setup_complete
-    start_time = time.time()
-    logger.debug(request.__dict__)
-    path = request.scope['path']
 
     if not setup_complete:
         await startup_event()
         setup_complete = True
+    
+
         
     try:
         response = await call_next(request)
         fix.heartbeat()
-        process_time = round(time.time() - start_time, 8)
-        http_logger.info(json.dumps({"time":process_time, "path":path}),
-                     extra={"tags":{ "type":"request-info", "path-request":path}}
-        )
         return response
     except exc.SQLAlchemyError as sqle:
         logger.info("DB ERROR: Trying to create again....")
@@ -86,6 +82,11 @@ instrumentator = Instrumentator().instrument(app)
 # App endpoints
 @app.on_event("startup")
 async def startup_event():
+    set_loggers()
+    fix = Fix()
+    fix.login()
+    logger = logging.getLogger('general')
+    http_logger = logging.getLogger('http')
     instrumentator.expose(app) # connect to prometheus
     wait_mysql()
     create_tables()
