@@ -82,6 +82,9 @@ instrumentator = Instrumentator().instrument(app)
 # App endpoints
 @app.on_event("startup")
 async def startup_event():
+    global fix
+    global logger
+    global http_logger
     set_loggers()
     fix = Fix()
     fix.login()
