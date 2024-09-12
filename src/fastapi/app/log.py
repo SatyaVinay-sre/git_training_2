@@ -50,39 +50,26 @@ def set_loggers():
 
     # fix log handler
     
-    # Initialize queue for the fix logger
     fix_queue = Queue(-1)
     fix_queue_handler = QueueHandler(fix_queue)
-    
-    # Get or create the fix logger
+
     fix_logger = logging.getLogger("fix")
     fix_logger.setLevel(logging.DEBUG)
-    
-    # Prevent adding handlers multiple times
-    if not any(isinstance(handler, QueueHandler) for handler in fix_logger.handlers):
-        # Add the queue handler to the logger
-        fix_logger.addHandler(fix_queue_handler)
-    
-    # Define the formatter
-    fix_formatter = logging.Formatter('%(message)s')
-    
-    # Stream handler for logging to stdout
-    if not any(isinstance(handler, logging.StreamHandler) for handler in fix_logger.handlers):
-        fix_stdh = logging.StreamHandler(sys.stdout)
-        fix_stdh.setLevel(logging.DEBUG)
-        fix_stdh.setFormatter(fix_formatter)
-        fix_logger.addHandler(fix_stdh)
-    
-    # Queue listener: only use stream handler and queue handler
-    fix_listener = QueueListener(fix_queue, fix_stdh, respect_handler_level=True)
-    
-    # Disable propagation to avoid duplicate logs on stdout
-    fix_logger.propagate = False
-    
-    # Start the listener
-    fix_listener.start()
-    
+    fix_logger.addHandler(fix_queue_handler)
 
+    fix_file_handler = TimedRotatingFileHandler('/logs-volume/fixlogs/fixlogs.log', when="M", backupCount=10)
+    fix_file_handler.setLevel(logging.DEBUG)
+
+    
+    fix_formatter = logging.Formatter('%(message)s')
+    fix_file_handler.setFormatter(fix_formatter)
+    
+    fix_stdh = logging.StreamHandler(sys.stdout)
+    fix_stdh.setLevel(logging.DEBUG)
+    fix_stdh.setFormatter(fix_formatter)
+    
+    fix_listener = QueueListener(fix_queue, fix_stdh, fix_file_handler,respect_handler_level=True)
+    fix_listener.start()
 
     # general logger
     queue = Queue(-1)
@@ -139,5 +126,4 @@ def set_loggers():
     
     http_listener = QueueListener(http_queue, http_stdh, http_file_handler,respect_handler_level=True)
     http_listener.start()
-
 
