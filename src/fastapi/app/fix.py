@@ -135,16 +135,19 @@ class Fix(FixDecoder):
         #open(self.logfile(),'a').write(msg_data+"\n")
 
         # log og message to loki
-        self.logger.info(
-            json.dumps(msg_data),
-            extra={ 'tags': {'type':"fixlogs"}}
-        )
+        #self.logger.info(
+            #json.dumps(msg_data),
+            #extra={ 'tags': {'type':"fixlogs"}}
+        #)
 
         # log tranlated fix to loki
-        self.logger.info(
-            json.dumps(self.fix_to_dict(msg_data)),
-            extra={'tags':{'type':"fixlogs-decoded"}}
-        )
+        #self.logger.info(
+            #json.dumps(self.fix_to_dict(msg_data)),
+            #extra={'tags':{'type':"fixlogs-decoded"}}
+        #)
+
+        print(json.dumps(msg_data))
+        print(json.dumps(self.fix_to_dict(msg_data))
 
     #def logfile(self) -> str:
         #"""
