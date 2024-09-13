@@ -1,2 +1,0 @@
-# Use the public MySQL image
-FROM public.ecr.aws/bitnami/mysql:8.0

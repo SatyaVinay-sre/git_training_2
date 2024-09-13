@@ -1,0 +1,43 @@
+# Use a slim Python base image for reduced size
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies: We will install only what we need for Selenium and requests
+# For Chrome and WebDriver, use Chrome’s lightweight version
+RUN apt-get update && apt-get install -y \
+    chromium-driver \
+    chromium \
+    libglib2.0-0 \
+    libnss3 \
+    libgconf-2-4 \
+    libfontconfig1 \
+    libxrender1 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libxtst6 \
+    libxrandr2 \
+    libasound2 \
+    libatk1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    wget \
+    curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir selenium requests
+
+# Copy the Python script into the container
+COPY src/simulate-traders/app_test.py /app/
+
+# Set environment variables for Chrome to run in headless mode
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROME_DRIVER=/usr/bin/chromedriver
+
+# Run the Selenium script
+CMD ["python", "app_test.py"]
