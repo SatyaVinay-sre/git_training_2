@@ -1,0 +1,22 @@
+pipeline {
+  agent {
+      label 'kaniko'
+  }
+
+  environment {
+    ECR_REPO = '108174090253.dkr.ecr.us-east-1.amazonaws.com/production-support-course'
+  }
+
+  stages {
+    stage('Build and Publish Selenium App') {
+      steps {
+        container(name: 'kaniko') {
+          sh '''
+            echo \'{ "credsStore": "ecr-login" }\' > /kaniko/.docker/config.json
+            /kaniko/executor -f `pwd`/Dockerfiles/Dockerfile_simulate-traders -c `pwd` --insecure --skip-tls-verify --cache=false --cleanup --destination=${ECR_REPO}:simulate-traders
+          '''
+        }
+      }
+    }
+  }
+}
