@@ -256,10 +256,10 @@ def try_fill_order(orderid) -> bool:
             order.fill.append(order_fill)
             logger.info("TOTAL FILL FOR BOTH ORDERS")
             fix.full_fill(stock=order.symbol, order_id=order.orderid,
-                          price=order.price, side=order.side, qty=order.shares)
+                          price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
 
             fix.full_fill(stock=o.symbol, order_id=o.orderid,
-                          price=o.price, side=o.side, qty=o.shares)
+                          price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
 
             fills = -sum([f.share for f in o.fill]) # total shares filled
             session.add(o)
@@ -275,9 +275,9 @@ def try_fill_order(orderid) -> bool:
             logger.info("FILL CURRENT ORDER PARTIAL FILL EXISTING")
             fills = -sum([f.share for f in o.fill]) # total shares filled
             fix.partial_fill(stock=o.symbol, order_id=o.orderid, price=o.price,
-                             side=o.side, qty=o.shares, last_order_qty=o_shares, cum_qty=fills)
+                             side=o.side, qty=o.shares, last_order_qty=o_shares, cum_qty=fills, orig_order_id=order.orderid)
             fix.full_fill(stock=order.symbol, order_id=order.orderid,
-                          price=order.price, side=order.side, qty=order.shares)
+                          price=order.price, side=order.side, qty=order.shares, orig_order_id=0.orderid)
 
             session.add(o)
             break
@@ -295,9 +295,9 @@ def try_fill_order(orderid) -> bool:
 
             order_fills = -sum([f.share for f in order.fill]) # total shares filled
             fix.partial_fill(stock=order.symbol, order_id=order.orderid, price=order.price,
-                              side=order.side, qty=order.shares, last_order_qty=o_shares, cum_qty=order_fills)
+                              side=order.side, qty=order.shares, last_order_qty=o_shares, cum_qty=order_fills, orig_order_id=o.orderid)
             fix.full_fill(stock=o.symbol, order_id=o.orderid,
-                          price=o.price, side=o.side, qty=o.shares)
+                          price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
 
             session.add(o)
 
