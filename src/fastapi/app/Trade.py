@@ -224,7 +224,7 @@ def try_fill_order(orderid) -> bool:
 
     order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
 
-    fix.new_order(stock=order.symbol, qty= order.shares, order_id=order.orderid, price=order.price, sender=order.user.uname)
+    fix.new_order(stock=order.symbol, side=order.side, qty= order.shares, order_id=order.orderid, price=order.price, sender=order.user.uname)
 
     order_options = session.execute(select(Order).where(
         and_(
