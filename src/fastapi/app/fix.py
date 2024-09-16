@@ -52,7 +52,7 @@ class FixMessages:
 
     def full_fill(self, stock="AAPL", order_id=1, price=1, side=1, qty=1, orig_order_id=""):
         FULLYFILLED=f"8=FIX4.4; 35=8; 34={self.broker_seq_number}; 49={self.broker}; 56={self.client}; "+\
-        f"52={datetime.datetime.now()}; 55={stock}; 40=2; 41={orig_order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; "+\
+        f"52={datetime.datetime.now()}; 55={stock}; 40=2; 41={orig_order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 11={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; "+\
         f"31={price}; 39=2; 54={side}; "+\
         f"44={price}; 32=0; 17=exec{datetime.datetime.now()}; 38={qty}; 60={datetime.datetime.now()}; 6={price}; 14={qty}; 37={order_id}; 10=246;"
         self.broker_seq_number +=1
