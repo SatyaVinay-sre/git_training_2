@@ -277,7 +277,7 @@ def try_fill_order(orderid) -> bool:
             fix.partial_fill(stock=o.symbol, order_id=o.orderid, price=o.price,
                              side=o.side, qty=o.shares, last_order_qty=o_shares, cum_qty=fills, orig_order_id=order.orderid)
             fix.full_fill(stock=order.symbol, order_id=order.orderid,
-                          price=order.price, side=order.side, qty=order.shares, orig_order_id=0.orderid)
+                          price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
 
             session.add(o)
             break
