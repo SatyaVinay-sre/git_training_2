@@ -27,32 +27,32 @@ class FixMessages:
 
         # new order receive
         self.log(f"8=FIX4.4; 35=D; 34={self.client_seq_number}; 49={self.client}; 56={self.broker}; 52={datetime.datetime.now()};"+
-                f" 55={stock}; 40=2; 38={qty}; 21=2; 50={sender}; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')};"+
+                f" 55={stock}; 40=2; 38={qty}; 21=2; 50={sender}; 11={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')};"+
                 f" 60={datetime.datetime.now()}; 54={side}; 44={price}; 10=0252;")
 
 
         # new order acknowledge
         self.log(f"8=FIX4.4; 35=8; 34={self.broker_seq_number}; 49={self.broker}; 56={self.client}; 52={datetime.datetime.now()};"+
-                f" 55={stock}; 40=2; 21=2; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')};"+
+                f" 55={stock}; 40=2; 21=2; 11={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')};"+
                 f" 32=0; 17=exec{datetime.datetime.now()}; 38={qty}; 60={datetime.datetime.now()}; 54={side}; "+
-                f"44={price}; 50={sender}; 6=0; 14=0; 37={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; 10=200;")
+                f"44={price}; 50={sender}; 6=0; 14=0; 37={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 10=200;")
 
         self.broker_seq_number +=1
         self.client_seq_number +=1
 
         # connect to DB, see if a pending order
 
-    def partial_fill(self, stock="AAPL", order_id=1, price=1, side=1, qty=1, last_order_qty=1, cum_qty=1):
+    def partial_fill(self, stock="AAPL", order_id=1, price=1, side=1, qty=1, last_order_qty=1, cum_qty=1, orig_order_id=""):
         # 150=1 is partial fill
         PARTIALFILL=f"8=FIX4.4; 35=8; 34={self.broker_seq_number}; 49={self.broker}; 56={self.client}; 52={datetime.datetime.now()}; "+ \
-        f"55={stock}; 40=2; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; 31={price}; 39=1; 54={side}; 44={price}; 32={last_order_qty}; 17=exec{datetime.datetime.now()}; "+\
-                        f"38={qty}; 60={datetime.datetime.now()}; 6={price}; 14={cum_qty}; 37={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')} 10=240;"
+        f"55={stock}; 40=2; 41={orig_order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 11={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 31={price}; 39=1; 54={side}; 44={price}; 32={last_order_qty}; 17=exec{datetime.datetime.now()}; "+\
+                        f"38={qty}; 60={datetime.datetime.now()}; 6={price}; 14={cum_qty}; 37={order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')} 10=240;"
         self.broker_seq_number +=1
         self.log(PARTIALFILL)
 
-    def full_fill(self, stock="AAPL", order_id=1, price=1, side=1, qty=1):
+    def full_fill(self, stock="AAPL", order_id=1, price=1, side=1, qty=1, orig_order_id=""):
         FULLYFILLED=f"8=FIX4.4; 35=8; 34={self.broker_seq_number}; 49={self.broker}; 56={self.client}; "+\
-        f"52={datetime.datetime.now()}; 55={stock}; 40=2; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; "+\
+        f"52={datetime.datetime.now()}; 55={stock}; 40=2; 41={orig_order_id}-{datetime.datetime.now().strftime('%Y-%m-%d')}; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; "+\
         f"31={price}; 39=2; 54={side}; "+\
         f"44={price}; 32=0; 17=exec{datetime.datetime.now()}; 38={qty}; 60={datetime.datetime.now()}; 6={price}; 14={qty}; 37={order_id}; 10=246;"
         self.broker_seq_number +=1
