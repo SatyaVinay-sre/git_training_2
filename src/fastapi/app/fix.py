@@ -17,7 +17,7 @@ class FixMessages:
         print(msg)
 
 
-    def new_order(self, stock: str="AAPL", qty: int = 1, order_id: int=1, side: int=1, price: float=1.0 ):
+    def new_order(self, stock: str="AAPL", qty: int = 1, order_id: int=1, side: int=1, price: float=1.0, sender="" ):
 
         """
         params
@@ -27,7 +27,7 @@ class FixMessages:
 
         # new order receive
         self.log(f"8=FIX4.4; 35=D; 34={self.client_seq_number}; 49={self.client}; 56={self.broker}; 52={datetime.datetime.now()};"+
-                f" 55={stock}; 40=2; 38={qty}; 21=2; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')};"+
+                f" 55={stock}; 40=2; 38={qty}; 21=2; 50={sender}; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')};"+
                 f" 60={datetime.datetime.now()}; 54={side}; 44={price}; 10=0252;")
 
 
@@ -35,7 +35,7 @@ class FixMessages:
         self.log(f"8=FIX4.4; 35=8; 34={self.broker_seq_number}; 49={self.broker}; 56={self.client}; 52={datetime.datetime.now()};"+
                 f" 55={stock}; 40=2; 21=2; 11={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')};"+
                 f" 32=0; 17=exec{datetime.datetime.now()}; 38={qty}; 60={datetime.datetime.now()}; 54={side}; "+
-                f"44={price}; 6=0; 14=0; 37={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; 10=200;")
+                f"44={price}; 50={sender}; 6=0; 14=0; 37={order_id}{datetime.datetime.now().strftime('%Y-%m-%d')}; 10=200;")
 
         self.broker_seq_number +=1
         self.client_seq_number +=1
