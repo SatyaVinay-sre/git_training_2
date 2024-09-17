@@ -61,9 +61,11 @@ class Fill(Base):
     __tablename__="Fill"
     fillid = Column(Integer, primary_key=True)
     orderid = Column(Integer, ForeignKey('Order.orderid'))
+    matchedorderid  = Column(Integer, ForeignKey('Order.orderid'))
     userid = Column(Integer, ForeignKey('User.userid'))
     share = Column(Integer)
     order = relationship("Order", back_populates="fill")
+    matched_order  = relationship("Order", foreign_keys=[matchedorderid ])  # Existing filled order
     price = Column(DECIMAL(15,2))
     symbol = Column(String(16), ForeignKey('Product.symbol'))
 
