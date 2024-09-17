@@ -96,7 +96,8 @@ async def startup_event():
     
         load_product_from_backup("Product2")
         # stock_list_to_db() # this made an API call, which may not be needed for our simple app....
-    except:
+    except as e:
+        logger.debug(e)
         logger.info("Data Already Present..")
 
 
