@@ -39,6 +39,7 @@ class Product(Base):
     productType = Column(String(12))
     name = Column(String(128))
     lastUpdate = Column(DateTime)
+    order = relationship('Order',  back_populates="product")
     # Removed erroneous relationship
     # user = relationship('Order', back_populates="product")
 
