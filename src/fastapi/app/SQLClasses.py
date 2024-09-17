@@ -61,7 +61,7 @@ class Order(Base):
     user = relationship("User", back_populates="orders")
     # Relationship with Product, no need for back_populates
     product = relationship("Product")
-    fill = relationship("Fill", back_populates="order")
+    fill = relationship("Fill", foreign_keys="[Fill.orderid]", back_populates="order")
     # Add 'fills_as_matched' relationship for matched orders
     fills_as_matched = relationship("Fill", foreign_keys="[Fill.matchedorderid]", back_populates="matched_order")
 
