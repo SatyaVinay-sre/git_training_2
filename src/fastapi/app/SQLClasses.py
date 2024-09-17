@@ -1,12 +1,9 @@
-from sqlalchemy.types import *
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, DECIMAL
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from sqlalchemy import Column, ForeignKey, create_engine, Table, PrimaryKeyConstraint
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-
 Base = declarative_base()
-
 
 Users_Roles_Bridge = Table(
     "UserRoles",
@@ -14,7 +11,6 @@ Users_Roles_Bridge = Table(
     Column("roleid", ForeignKey("Role.roleid", name="fk_roleid_userRoleBridge"), primary_key=True),
     Column("userid", ForeignKey("User.userid", name="fk_userid_userRoleBridge"), primary_key=True)
 )
-
 
 class User(Base):
     __tablename__ = 'User'
@@ -24,46 +20,50 @@ class User(Base):
     password = Column(String(45))
     role = relationship('Role', secondary=Users_Roles_Bridge, back_populates='user')
     product = relationship('Order', back_populates='user')
-    dateJoined = Column(DateTime, server_default =func.now() )
+    dateJoined = Column(DateTime, server_default=func.now())
 
 class Role(Base):
     __tablename__ = 'Role'
+    
     roleid = Column(Integer, primary_key=True)
     name = Column(String(24), unique=True)
     user = relationship('User', secondary=Users_Roles_Bridge, back_populates="role")
 
 class Product(Base):
-    __tablename__="Product"
+    __tablename__ = "Product"
 
     symbol = Column(String(16), primary_key=True)
-    price = Column(DECIMAL(15,2))
+    price = Column(DECIMAL(15, 2))
     productType = Column(String(12))
     name = Column(String(128))
-    lastUpdate= Column(DateTime)
-    user = relationship('Order',  back_populates="product")
+    lastUpdate = Column(DateTime)
+    # Removed erroneous relationship
+    # user = relationship('Order', back_populates="product")
 
 class Order(Base):
-    __tablename__='Order'
+    __tablename__ = 'Order'
 
     orderid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('User.userid'))
     symbol = Column(String(16), ForeignKey('Product.symbol'))
     side = Column(Integer)
-    orderTime = Column(DateTime, server_default =func.now() )
+    orderTime = Column(DateTime, server_default=func.now())
     shares = Column(Integer)
-    price = Column(DECIMAL(15,2))
-    status = Column(String(24), server_default="pending") # filled, partial_fill, or cancled
+    price = Column(DECIMAL(15, 2))
+    status = Column(String(24), server_default="pending")  # filled, partial_fill, or canceled
     user = relationship("User", back_populates="product")
-    product = relationship("Product", back_populates="user")
+    product = relationship("Product", back_populates="order")  # Corrected back_populates
     fill = relationship("Fill", back_populates="order")
 
 class Fill(Base):
-    __tablename__="Fill"
+    __tablename__ = "Fill"
+    
     fillid = Column(Integer, primary_key=True)
     orderid = Column(Integer, ForeignKey('Order.orderid'))
     userid = Column(Integer, ForeignKey('User.userid'))
-    matchedorderid  = Column(Integer, ForeignKey('Order.orderid'))
+    matchedorderid = Column(Integer, ForeignKey('Order.orderid'))
     share = Column(Integer)
-    order = relationship("Order", back_populates="fill")
-    price = Column(DECIMAL(15,2))
+    order = relationship("Order", foreign_keys=[orderid], back_populates="fill")
+    matched_order = relationship("Order", foreign_keys=[matchedorderid], back_populates="fills_as_matched")
+    price = Column(DECIMAL(15, 2))
     symbol = Column(String(16), ForeignKey('Product.symbol'))
