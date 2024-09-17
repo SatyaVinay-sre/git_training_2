@@ -62,6 +62,7 @@ class Fill(Base):
     fillid = Column(Integer, primary_key=True)
     orderid = Column(Integer, ForeignKey('Order.orderid'))
     userid = Column(Integer, ForeignKey('User.userid'))
+    matchedorderid  = Column(Integer, ForeignKey('Order.orderid'))
     share = Column(Integer)
     order = relationship("Order", back_populates="fill")
     price = Column(DECIMAL(15,2))
