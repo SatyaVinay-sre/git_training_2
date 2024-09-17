@@ -71,20 +71,21 @@ def site_roles() -> list:
     ]
 
 def create_roles() -> dict:
-
     session = Session(create_engine(mysql_conn_str()).connect())
+    try:
+        roles = site_roles()
+        roles_dict = {role: Role(name=role) for role in roles}
+        session.add_all(roles_dict.values())
+        session.commit()
+        return roles_dict
+    except Exception as e:
+        logger.error(f"Error creating roles: {e}")
+        session.rollback()
+        raise
+    finally:
+        logger.info("Roles created")
+        session.close()
 
-    roles = site_roles()
-
-    roles_dict = {role: Role(name=role) for role in roles}
-
-    session.add_all(
-        roles_dict.values()
-    )
-
-    session.commit()
-
-    return roles_dict
 
 def get_roles() ->dict:
 
