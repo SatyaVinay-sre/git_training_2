@@ -45,7 +45,14 @@ def hash_password(password: str=None) ->str:
     return hash_value
 
 def create_tables() -> None:
-    Base.metadata.create_all(create_engine(mysql_conn_str()))
+    engine = create_engine(mysql_conn_str())
+    
+    try:
+        logger.info("Starting table creation process.")
+        Base.metadata.create_all(engine)
+        logger.info("Tables created successfully.")
+    except Exception as e:
+        logger.error("Error occurred while creating tables:", exc_info=True)
 
 def create_admin(admin_role: Role = None) -> None:
     session = Session(create_engine(mysql_conn_str()).connect())
