@@ -56,18 +56,13 @@ class Order(Base):
     user = relationship("User", back_populates="product")
     product = relationship("Product", back_populates="user")
     fill = relationship("Fill", back_populates="order")
-    #fills_as_matched = relationship("Fill",  back_populates="matched_order")
-
 
 class Fill(Base):
     __tablename__="Fill"
     fillid = Column(Integer, primary_key=True)
     orderid = Column(Integer, ForeignKey('Order.orderid'))
-    matchedorderid  = Column(Integer, ForeignKey('Order.orderid'))
     userid = Column(Integer, ForeignKey('User.userid'))
     share = Column(Integer)
     order = relationship("Order", back_populates="fill")
-    #matched_order = relationship("Order",  back_populates="fills_as_matched")
     price = Column(DECIMAL(15,2))
     symbol = Column(String(16), ForeignKey('Product.symbol'))
-
