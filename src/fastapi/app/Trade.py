@@ -249,9 +249,9 @@ def try_fill_order(orderid) -> bool:
             o.status = "filled"
             order.status = "filled"
             o_fill = Fill(share=o_shares*-1, orderid=o.orderid,
-                          price=o.price, symbol=o.symbol, userid=o.userid ) # fill order found
+                          price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid = order.orderid ) # fill order found
             o.fill.append(o_fill)
-            order_fill = Fill(share=o_shares, orderid=order.orderid,
+            order_fill = Fill(share=o_shares, orderid=order.orderid, matchedorderid = o.orderid,
                               price=order.price, symbol=order.symbol, userid=order.userid) # fill original order
             order.fill.append(order_fill)
             logger.info("TOTAL FILL FOR BOTH ORDERS")
@@ -268,9 +268,10 @@ def try_fill_order(orderid) -> bool:
             (shares > 0 and o_shares < shares*-1):
             o.status = "partial_fill"
             order.status='filled'
-            o_fill = Fill(share=shares, price=o.price, symbol=o.symbol, userid=o.userid) # orderid can be ommitted, orm will fill it in
+            o_fill = Fill(share=shares, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid) # orderid can be ommitted, orm will fill it in
             o.fill.append(o_fill)
-            order_fill = Fill(share=shares*-1, price=order.price, symbol=order.symbol, userid=order.userid )
+            order_fill = Fill(share=shares*-1, price=order.price, symbol=order.symbol, 
+                              userid=order.userid, matchedorderid =o.orderid )
             order.fill.append(order_fill)
             logger.info("FILL CURRENT ORDER PARTIAL FILL EXISTING")
             fills = -sum([f.share for f in o.fill]) # total shares filled
@@ -285,9 +286,9 @@ def try_fill_order(orderid) -> bool:
              (shares > 0 and o_shares < 0):  # partial fill
             o.status="filled"
             order.status ="partial_fill"
-            o_fill = Fill(share=o_shares*-1, price=o.price, symbol=o.symbol, userid=o.userid)
+            o_fill = Fill(share=o_shares*-1, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid)
             o.fill.append(o_fill)
-            order_fill= Fill(share=o_shares, price=order.price, symbol=order.symbol, userid=order.userid)
+            order_fill= Fill(share=o_shares, price=order.price, symbol=order.symbol, userid=order.userid, matchedorderid = o.orderid)
             order.fill.append(order_fill)
             shares = shares + o_shares
             logger.info("PARTIAL FILL CURRENT ORDER FULL FILL EXISTING")
