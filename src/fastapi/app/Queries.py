@@ -1,29 +1,33 @@
-"""
-This file contains general querries that do not modify the Redis Cache of the app
-
-"""
+from fastapi import FastAPI
 from time_it import time_def
 from sqlalchemy import create_engine, text
-
-from app.SQLsetup import mysql_conn_str
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
+from app.SQLsetup import mysql_conn_str
+from app.SQLClasses import Product
+
+app = FastAPI()
+
+# Set up the engine and sessionmaker globally (synchronous)
+engine = create_engine(mysql_conn_str(), pool_size=5, max_overflow=10, pool_timeout=30, pool_recycle=3600)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db_connection():
+    """Helper function to create a synchronous database connection"""
+    with SessionLocal() as session:
+        return session
 
 @time_def(log_name="profiler")
 def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
-
     query = text(f"""SELECT symbol, price FROM orderbook.Product
     WHERE symbol NOT LIKE '%\.%' AND symbol NOT LIKE '%1%'
     AND symbol LIKE '{term}%'
     ORDER BY symbol
     LIMIT {limit} OFFSET {skip}
-    ;
     """)
 
-    sqlEngine = create_engine(mysql_conn_str())
-
-    dbConnection = sqlEngine.connect()
-
-    df = pd.read_sql(query, dbConnection);
+    with get_db_connection() as session:
+        df = pd.read_sql(query, session.bind)
 
     return df
 
@@ -31,13 +35,11 @@ def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
 def stock_quote(symbol: str = None) -> float:
     query = text(f"""SELECT price FROM orderbook.Product
                 WHERE symbol='{symbol}'""")
-    sqlEngine = create_engine(mysql_conn_str())
 
-    dbConnection = sqlEngine.connect()
+    with get_db_connection() as session:
+        df = pd.read_sql(query, session.bind)
 
-    df = pd.read_sql(query, dbConnection);
-
-    return round(float(df['price']),2)
+    return round(float(df['price'][0]), 2) if not df.empty else 0.0
 
 @time_def(log_name="profiler")
 def num_stocks(term: str = "") -> int:
@@ -46,11 +48,7 @@ def num_stocks(term: str = "") -> int:
     AND symbol LIKE '{term}%'
     """)
 
-    sqlEngine = create_engine(mysql_conn_str())
+    with get_db_connection() as session:
+        df = pd.read_sql(query, session.bind)
 
-    dbConnection = sqlEngine.connect()
-
-    df = pd.read_sql(query, dbConnection);
-
-    return int(df['number'])
-
+    return int(df['number'][0]) if not df.empty else 0
