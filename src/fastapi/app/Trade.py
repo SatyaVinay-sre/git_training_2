@@ -216,17 +216,13 @@ def new_order(uname: str = None,
     session.flush()
     logger.info(f"New Orderid {order.orderid}")
     session.commit()
+    try_fill_order(session, order)
     session.close()
-    try_fill_order(order.orderid)
 
 @time_def(log_name="profiler")
-def try_fill_order(orderid) -> bool:
+def try_fill_order(session, order) -> bool:
 
-    conn = create_engine(mysql_conn_str()).connect()
-
-    session = Session(conn)
-
-    order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
+    #order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
 
     fix.new_order(stock=order.symbol, side=order.side, qty= order.shares, order_id=order.orderid, price=order.price, sender=order.user.uname)
 
@@ -312,7 +308,7 @@ def try_fill_order(orderid) -> bool:
     session.add(order)
     session.flush()
     session.commit()
-    session.close()
+    #session.close()
 
 
 
