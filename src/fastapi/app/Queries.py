@@ -1,29 +1,31 @@
-from fastapi import FastAPI
+"""
+This file contains general querries that do not modify the Redis Cache of the app
+
+"""
 from time_it import time_def
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-import pandas as pd
+
 from app.SQLsetup import mysql_conn_str
-from app.SQLClasses import Product
-
-app = FastAPI()
-
-# Set up the engine and sessionmaker globally (synchronous)
-engine = create_engine(mysql_conn_str(), pool_size=5, max_overflow=10, pool_timeout=30, pool_recycle=3600)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+import pandas as pd
 
 @time_def(log_name="profiler")
 def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
+
     query = text(f"""SELECT symbol, price FROM orderbook.Product
     WHERE symbol NOT LIKE '%\.%' AND symbol NOT LIKE '%1%'
     AND symbol LIKE '{term}%'
     ORDER BY symbol
     LIMIT {limit} OFFSET {skip}
+    ;
     """)
 
-    with SessionLocal() as session:
-        df = pd.read_sql(query, session.bind)
+    sqlEngine = create_engine(mysql_conn_str())
+
+    dbConnection = sqlEngine.connect()
+
+    df = pd.read_sql(query, dbConnection);
+
+    dbConnection.close()
 
     return df
 
@@ -31,11 +33,15 @@ def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
 def stock_quote(symbol: str = None) -> float:
     query = text(f"""SELECT price FROM orderbook.Product
                 WHERE symbol='{symbol}'""")
+    sqlEngine = create_engine(mysql_conn_str())
 
-    with SessionLocal() as session:
-        df = pd.read_sql(query, session.bind)
+    dbConnection = sqlEngine.connect()
 
-    return round(float(df['price'][0]), 2) if not df.empty else 0.0
+    df = pd.read_sql(query, dbConnection);
+
+    dbConnection.close()
+
+    return round(float(df['price']),2)
 
 @time_def(log_name="profiler")
 def num_stocks(term: str = "") -> int:
@@ -44,7 +50,12 @@ def num_stocks(term: str = "") -> int:
     AND symbol LIKE '{term}%'
     """)
 
-    with SessionLocal() as session:
-        df = pd.read_sql(query, session.bind)
+    sqlEngine = create_engine(mysql_conn_str())
 
-    return int(df['number'][0]) if not df.empty else 0
+    dbConnection = sqlEngine.connect()
+
+    df = pd.read_sql(query, dbConnection);
+
+    dbConnection.close()
+
+    return int(df['number'])
