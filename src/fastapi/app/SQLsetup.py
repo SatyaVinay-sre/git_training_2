@@ -57,15 +57,38 @@ def create_tables() -> None:
 def create_admin(admin_role: Role = None) -> None:
     session = Session(create_engine(mysql_conn_str()).connect())
 
-    user1 = User(uname="admin", password=hash_password("admin"))
-    user1.role.append(admin_role)
+    # Ensure the admin_role is valid
+    if not admin_role:
+        raise ValueError("admin_role must be provided")
 
-    user2 = User(uname="wiley", password=hash_password("wiley"))
-    user2.role.append(admin_role)
+    # Update or create user 'admin'
+    user1 = session.query(User).filter_by(uname="admin").first()
+    if user1:
+        # Update existing user
+        user1.password = hash_password("admin")
+        if admin_role not in user1.role:
+            user1.role.append(admin_role)
+    else:
+        # Create new user
+        user1 = User(uname="admin", password=hash_password("admin"))
+        user1.role.append(admin_role)
+        session.add(user1)
 
-    session.add(user1)
-    session.add(user2)
-    session.flush()
+    # Update or create user 'wiley'
+    user2 = session.query(User).filter_by(uname="wiley").first()
+    if user2:
+        # Update existing user
+        user2.password = hash_password("wiley")
+        if admin_role not in user2.role:
+            user2.role.append(admin_role)
+    else:
+        # Create new user
+        user2 = User(uname="wiley", password=hash_password("wiley"))
+        user2.role.append(admin_role)
+        session.add(user2)
+
+    session.commit()
+
 
 
     session.commit()
