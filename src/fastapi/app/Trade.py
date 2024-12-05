@@ -13,8 +13,8 @@ fix = Fix()
 # Set up the engine and sessionmaker globally
 engine = create_engine(
     mysql_conn_str,
-    pool_size=5,  # Number of connections to keep open
-    max_overflow=10,  # Allow up to 10 additional connections
+    pool_size=20,  # Number of connections to keep open
+    max_overflow=50,  # Allow up to 10 additional connections
     pool_timeout=30,  # Timeout for acquiring a connection from the pool
     pool_recycle=3600  # Recycle connections after an hour
 )
