@@ -12,10 +12,6 @@ app = FastAPI()
 engine = create_engine(mysql_conn_str(), pool_size=5, max_overflow=10, pool_timeout=30, pool_recycle=3600)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db_connection():
-    """Helper function to create a synchronous database connection"""
-    with SessionLocal() as session:
-        return session
 
 @time_def(log_name="profiler")
 def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
@@ -26,7 +22,7 @@ def stock_list(limit: int = 10, skip: int = 0, term: str = "") -> pd.DataFrame:
     LIMIT {limit} OFFSET {skip}
     """)
 
-    with get_db_connection() as session:
+    with SessionLocal() as session:
         df = pd.read_sql(query, session.bind)
 
     return df
@@ -36,7 +32,7 @@ def stock_quote(symbol: str = None) -> float:
     query = text(f"""SELECT price FROM orderbook.Product
                 WHERE symbol='{symbol}'""")
 
-    with get_db_connection() as session:
+    with SessionLocal() as session:
         df = pd.read_sql(query, session.bind)
 
     return round(float(df['price'][0]), 2) if not df.empty else 0.0
@@ -48,7 +44,7 @@ def num_stocks(term: str = "") -> int:
     AND symbol LIKE '{term}%'
     """)
 
-    with get_db_connection() as session:
+    with SessionLocal() as session:
         df = pd.read_sql(query, session.bind)
 
     return int(df['number'][0]) if not df.empty else 0
