@@ -62,7 +62,7 @@ async def do_heartbeat_and_loki(request: Request, call_next):
         )
         return response
     except exc.SQLAlchemyError as sqle:
-        logger.info("DB ERROR: Trying to create again....")
+        logger.info(f"{sqle}")
         await startup_event()
         setup_complete = True
         return JSONResponse(status_code=500)
@@ -86,19 +86,21 @@ instrumentator = Instrumentator().instrument(app)
 # App endpoints
 @app.on_event("startup")
 async def startup_event():
+    global setup_complete
     instrumentator.expose(app) # connect to prometheus
     wait_mysql()
-    create_tables()
+    #create_tables()
     try:
          # create_roles will throw error if DB is already setup
-        roles = create_roles()
-        create_admin(roles['admin'])
+        #roles = create_roles()
+        create_admin('admin')
     
-        load_product_from_backup("Product2")
+        #load_product_from_backup("Product2")
         # stock_list_to_db() # this made an API call, which may not be needed for our simple app....
+        setup_complete = True
     except Exception as e:
         logger.debug(e)
-        logger.info("Data Already Present..")
+        logger.info("Error creating users")
 
 
 @app.post("/joinSite")
