@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, select, and_, or_, func, desc
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import select, delete, and_, or_, func
+from sqlalchemy.orm import Session
 from app.SQLsetup import mysql_conn_str
 from app.SQLClasses import *
 from sqlalchemy.dialects.postgresql import insert
@@ -10,144 +10,186 @@ from time_it import time_def
 logger = logging.getLogger('general')
 fix = Fix()
 
-# Set up the engine and sessionmaker globally
-engine = create_engine(
-    mysql_conn_str,
-    pool_size=20,  # Number of connections to keep open
-    max_overflow=50,  # Allow up to 10 additional connections
-    pool_timeout=30,  # Timeout for acquiring a connection from the pool
-    pool_recycle=3600  # Recycle connections after an hour
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 @time_def(log_name="profiler")
-def num_orders(uname: str = None, otype: list = [], symbol: str = None) -> list[dict]:
+def num_orders(uname: str = None,
+               otype: list = [],
+               symbol: str = None) -> list[dict]:
+    """
+    @params:
+    - otpye: can contain any of "pending", "partial_fill", "filled", "canceled", "canceled_partial_fill", "all"
+    """
+
+    session = Session(create_engine(mysql_conn_str()).connect())
+
     symbol = "%" if symbol is None or symbol == "" else symbol+"%"
-    and_conditions = [True]  # needs at least one condition
+
+    user = None if uname is None or uname == "" else \
+        session.execute(select(User).where(User.uname == uname)).fetchone()[0]
+
+    and_conditions = [True] # needs at least one condition
     or_conditions = [False]
 
-    with SessionLocal() as session:
-        user = None if uname is None or uname == "" else session.execute(select(User).where(User.uname == uname)).fetchone()[0]
+    if user is not None: # is username is set, add that condition
+        and_conditions.append(Order.userid == user.userid)
 
-        if user is not None:
-            and_conditions.append(Order.userid == user.userid)
+    if "pending" in otype:
+        or_conditions.append(Order.status=="pending")
 
-        if "pending" in otype:
-            or_conditions.append(Order.status == "pending")
-        if "partial_fill" in otype:
-            or_conditions.append(Order.status == "partial_fill")
-        if "canceled" in otype:
-            or_conditions.append(Order.status == "canceled")
-        if "canceled_partial_fill" in otype:
-            or_conditions.append(Order.status == "canceled_partial_fill")
-        if "filled" in otype:
-            or_conditions.append(Order.status == "filled")
-        if "all" in otype:
-            or_conditions.append(True)
+    if "partial_fill" in otype:
+        or_conditions.append(Order.status=="partial_fill")
 
-        and_conditions.append(Order.symbol.like(symbol))
-        and_condition = and_(*and_conditions, or_(*or_conditions))
+    if "canceled" in otype:
+        or_conditions.append(Order.status=="canceled")
 
-        num_of_orders = session.query(Order).filter(and_condition).count()
+    if "canceled_partial_fill" in otype:
+        or_conditions.append(Order.status=="canceled_partial_fill")
 
-    return num_of_orders
+    if "filled" in otype:
+        or_conditions.append(Order.status=="filled")
+
+    if "all" in otype:
+        or_conditions.append(True)
+
+    and_conditions.append(Order.symbol.like(symbol))
+
+    and_condition = and_(*and_conditions, or_(*or_conditions))
+
+    result = [] # in case no results
+
+    # return count of query
+    c = session.query(Order).filter(
+        and_condition
+    ).count()
+    session.close()
+    return c
 
 @time_def(log_name="profiler")
 def get_holdings(uname):
-    with SessionLocal() as session:
-        user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
-        symbols = session.query(Fill.symbol).distinct().filter(Fill.userid == user.userid)
+    session = Session(create_engine(mysql_conn_str()).connect())
+    user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
 
-        holdings = []
-        for symbol in symbols:
-            symbol = symbol.symbol
-            holding = {}
-            value = session.query(func.sum(Fill.share * Fill.price)).filter(
-                and_(Fill.userid == user.userid, Fill.symbol == symbol)).first()[0]
+    symbols = session.query(Fill.symbol).distinct().filter(Fill.userid==user.userid)
 
-            shares = session.query(func.sum(Fill.share)).filter(
-                and_(Fill.userid == user.userid, Fill.symbol == symbol)).first()[0]
+    holdings = []
+    for symbol in symbols:
+        symbol = symbol.symbol
+        holding = {}
 
-            holding['symbol'] = symbol
-            holding['shares'] = -shares
-            holding['avg_price'] = 0 if shares == 0 else value / shares
-            holdings.append(holding)
+        value = session.query(func.sum(Fill.share*Fill.price)).filter(
+            and_(Fill.userid == user.userid, Fill.symbol==symbol) )[0][0]
 
+        shares = session.query(func.sum(Fill.share)).filter(
+            and_(Fill.userid == user.userid, Fill.symbol==symbol) )[0][0]
+
+        holding['symbol']=symbol
+        holding['shares']=-shares
+        holding['avg_price'] = 0 if shares == 0 else value / shares
+        holdings.append(holding)
+    session.close()
     return holdings
 
 @time_def(log_name="profiler")
-def get_orders_paged(page: int = 1, results: int = 10, uname: str = None, otype: list = [], symbol: str = None, order_c: str = None) -> list[dict]:
-    symbol = "%" if symbol is None or symbol == "" else symbol + "%"
-    and_conditions = [True]
+def get_orders_paged(page: int = 1,
+               results: int = 10,
+               uname: str = None,
+               otype: list = [],
+               symbol: str = None,
+               order_c: str = None) -> list[dict]:
+    """
+    This functions gets orders starting at @page, for @results number of results
+    It can include a @uname, or get all users orders. @otype specefies the order type.
+    @symbol will search for any string in symbol with 'like "@symbol%"'
+        - do not include % in argument, it is prepended in this function
+
+    @params:
+    - otpye: can contain any of "pending", "partial_fill", "filled", "canceled", "canceled_partial_fill", "all"
+    """
+
+    session = Session(create_engine(mysql_conn_str()).connect())
+
+    symbol = "%" if symbol is None or symbol == "" else symbol+"%"
+
+    user = None if uname is None or uname == "" else \
+        session.execute(select(User).where(User.uname == uname)).fetchone()[0]
+
+    and_conditions = [True] # needs at least one condition
     or_conditions = [False]
 
-    with SessionLocal() as session:
-        user = None if uname is None or uname == "" else session.execute(select(User).where(User.uname == uname)).fetchone()[0]
+    if user is not None: # is username is set, add that condition
+        and_conditions.append(Order.userid == user.userid)
 
-        if user is not None:
-            and_conditions.append(Order.userid == user.userid)
+    if "pending" in otype:
+        or_conditions.append(Order.status=="pending")
 
-        if "pending" in otype:
-            or_conditions.append(Order.status == "pending")
-        if "partial_fill" in otype:
-            or_conditions.append(Order.status == "partial_fill")
-        if "canceled" in otype:
-            or_conditions.append(Order.status == "canceled")
-        if "canceled_partial_fill" in otype:
-            or_conditions.append(Order.status == "canceled_partial_fill")
-        if "filled" in otype:
-            or_conditions.append(Order.status == "filled")
-        if "all" in otype:
-            or_conditions.append(True)
+    if "partial_fill" in otype:
+        or_conditions.append(Order.status=="partial_fill")
 
-        and_conditions.append(Order.symbol.like(symbol))
-        and_condition = and_(*and_conditions, or_(*or_conditions))
+    if "canceled" in otype:
+        or_conditions.append(Order.status=="canceled")
 
-        if order_c == "date":
-            order = Order.orderTime.desc()
-        elif order_c == "amount":
-            order = desc(Order.shares * Order.price)
+    if "canceled_partial_fill" in otype:
+        or_conditions.append(Order.status=="canceled_partial_fill")
 
-        result = session.query(Order).filter(and_condition).order_by(order).limit(results).offset((page - 1) * results)
+    if "filled" in otype:
+        or_conditions.append(Order.status=="filled")
 
-        orders = []
-        for row in result:
-            order = {}
-            order['symbol'] = row.symbol
-            order['shares'] = row.shares
-            order['price'] = row.price
-            order['orderTime'] = row.orderTime
-            order['orderid'] = row.orderid
-            order['status'] = row.status
-            order['uname'] = row.user.uname
-            orders.append(order)
+    if "all" in otype:
+        or_conditions.append(True)
 
+    and_conditions.append(Order.symbol.like(symbol))
+
+    and_condition = and_(*and_conditions, or_(*or_conditions))
+
+    result = [] # in case no results
+
+    if order_c == "date":
+        order = Order.orderTime.desc()
+    elif order_c == "amount":
+        from sqlalchemy import desc
+        order = desc(Order.shares * Order.price)
+    # send query
+    result= session.query(Order).filter(
+        and_condition
+    ).order_by(order).limit(results).offset((page-1)*results)
+    session.close()
+    orders = []
+    for row in result:
+        #row = row[0]
+        order = {}
+        order['symbol'] = row.symbol
+        order['shares'] = row.shares
+        order['price'] = row.price
+        order['orderTime'] = row.orderTime
+        order['orderid'] = row.orderid
+        order['status'] = row.status
+        order['uname'] = row.user.uname
+        orders.append(order)
     return orders
 
 @time_def(log_name="profiler")
 def cancel_order(orderid: str=None) -> bool:
 
-    with SessionLocal() as session:
-      order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
-      if order.status == "filled":
-          return False
-      if order.status == "partial_fill":
-          order.status="canceled_partial_fill"
-      else:
-          order.status="canceled"
-  
-      qty_filled = -sum(f.share for f in order.fill)
-      qty_remaining = order.shares - qty_filled
-  
-      logger.info(f"CANCEL ORDERID {order.orderid}")
-  
-      fix.cancel_order(qty_remaining=qty_remaining, stock = order.symbol,
-                 order_id = order.orderid, side=order.side, qty=order.shares, cum_qty=qty_filled)
-  
-      session.add(order)
-      session.flush()
-      session.commit()
-      session.close()
+    session = Session(create_engine(mysql_conn_str()).connect())
+    order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
+    if order.status == "filled":
+        return False
+    if order.status == "partial_fill":
+        order.status="canceled_partial_fill"
+    else:
+        order.status="canceled"
+
+    qty_filled = -sum(f.share for f in order.fill)
+    qty_remaining = order.shares - qty_filled
+
+    logger.info(f"CANCEL ORDERID {order.orderid}")
+
+    fix.cancel_order(qty_remaining=qty_remaining, stock = order.symbol,
+               order_id = order.orderid, side=order.side, qty=order.shares, cum_qty=qty_filled)
+
+    session.add(order)
+    session.flush()
+    session.commit()
+    session.close()
     return True
 
 @time_def(log_name="profiler")
@@ -156,115 +198,124 @@ def new_order(uname: str = None,
               shares: str = None,
 ) -> bool:
 
-    with SessionLocal() as session:
+    session = Session(create_engine(mysql_conn_str()).connect())
 
-      user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
-  
-      product = session.execute(select(Product).where(Product.symbol == symbol)).fetchone()[0]
-  
-      side = 1 if shares >=1 else 2 # 2 is sell...
-  
-      order = Order(userid=user.userid,
-                    symbol=symbol,
-                    shares=shares,
-                    price=product.price,
-                    side=side
-      )
-      session.add(order)
-      session.flush()
-      logger.info(f"New Orderid {order.orderid}")
-      session.commit()
-      session.close()
-      try_fill_order(order.orderid)
+    user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
+
+    product = session.execute(select(Product).where(Product.symbol == symbol)).fetchone()[0]
+
+    side = 1 if shares >=1 else 2 # 2 is sell...
+
+    order = Order(userid=user.userid,
+                  symbol=symbol,
+                  shares=shares,
+                  price=product.price,
+                  side=side
+    )
+    session.add(order)
+    session.flush()
+    logger.info(f"New Orderid {order.orderid}")
+    session.commit()
+    session.close()
+    try_fill_order(order.orderid)
 
 @time_def(log_name="profiler")
 def try_fill_order(orderid) -> bool:
-    with SessionLocal() as session:
-  
-      order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
-  
-      fix.new_order(stock=order.symbol, side=order.side, qty= order.shares, order_id=order.orderid, price=order.price, sender=order.user.uname)
-  
-      order_options = session.execute(select(Order).where(
-          and_(
-              Order.symbol == order.symbol,
-              Order.side != order.side,
-              or_(Order.status == "pending" , Order.status == "partial_fill"),
-              Order.price == order.price,
-              Order.userid != order.userid
-          )
+
+    conn = create_engine(mysql_conn_str()).connect()
+
+    session = Session(conn)
+
+    order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
+
+    fix.new_order(stock=order.symbol, side=order.side, qty= order.shares, order_id=order.orderid, price=order.price, sender=order.user.uname)
+
+    order_options = session.execute(select(Order).where(
+        and_(
+            Order.symbol == order.symbol,
+            Order.side != order.side,
+            or_(Order.status == "pending" , Order.status == "partial_fill"),
+            Order.price == order.price,
+            Order.userid != order.userid
         )
       )
-  
-      shares = order.shares
-  
-      logger.info(f"Finding matching orders for order id {order.orderid}")
-      for order_option in order_options:
-          o = order_option[0] # the order that may be matched...
-          o_fills = sum([f.share for f in o.fill]) # count how many shares been filled
-          o_shares = o.shares + o_fills # number of outstanding shares for that order...
-          logger.info (f"Attempting to match order id {o.orderid}")
-          if o_shares == shares*-1: # if we match all shares remaning!
-              o.status = "filled"
-              order.status = "filled"
-              o_fill = Fill(share=o_shares*-1, orderid=o.orderid,
-                            price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid = order.orderid ) # fill order found
-              o.fill.append(o_fill)
-              order_fill = Fill(share=o_shares, orderid=order.orderid, matchedorderid = o.orderid,
-                                price=order.price, symbol=order.symbol, userid=order.userid) # fill original order
-              order.fill.append(order_fill)
-              logger.info("TOTAL FILL FOR BOTH ORDERS")
-              fix.full_fill(stock=order.symbol, order_id=order.orderid,
-                            price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
-  
-              fix.full_fill(stock=o.symbol, order_id=o.orderid,
-                            price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
-  
-              fills = -sum([f.share for f in o.fill]) # total shares filled
-              session.add(o)
-              break
-          elif (shares < 0 and o_shares > shares*-1) or\
-              (shares > 0 and o_shares < shares*-1):
-              o.status = "partial_fill"
-              order.status='filled'
-              o_fill = Fill(share=shares, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid) # orderid can be ommitted, orm will fill it in
-              o.fill.append(o_fill)
-              order_fill = Fill(share=shares*-1, price=order.price, symbol=order.symbol, 
-                                userid=order.userid, matchedorderid =o.orderid )
-              order.fill.append(order_fill)
-              logger.info("FILL CURRENT ORDER PARTIAL FILL EXISTING")
-              fills = -sum([f.share for f in o.fill]) # total shares filled
-              fix.partial_fill(stock=o.symbol, order_id=o.orderid, price=o.price,
-                               side=o.side, qty=o.shares, last_order_qty=o_shares, cum_qty=fills, orig_order_id=order.orderid)
-              fix.full_fill(stock=order.symbol, order_id=order.orderid,
-                            price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
-  
-              session.add(o)
-              break
-          elif (shares < 0 and o_shares > 0) or\
-               (shares > 0 and o_shares < 0):  # partial fill
-              o.status="filled"
-              order.status ="partial_fill"
-              o_fill = Fill(share=o_shares*-1, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid)
-              o.fill.append(o_fill)
-              order_fill= Fill(share=o_shares, price=order.price, symbol=order.symbol, userid=order.userid, matchedorderid = o.orderid)
-              order.fill.append(order_fill)
-              shares = shares + o_shares
-              logger.info("PARTIAL FILL CURRENT ORDER FULL FILL EXISTING")
-              fills = -sum([f.share for f in o.fill]) # total shares filled
-  
-              order_fills = -sum([f.share for f in order.fill]) # total shares filled
-              fix.partial_fill(stock=order.symbol, order_id=order.orderid, price=order.price,
-                                side=order.side, qty=order.shares, last_order_qty=o_shares, cum_qty=order_fills, orig_order_id=o.orderid)
-              fix.full_fill(stock=o.symbol, order_id=o.orderid,
-                            price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
-  
-              session.add(o)
-  
-      #session.add(order)
-      fills = -sum([f.share for f in order.fill]) # total shares filled
-  
-      session.add(order)
-      session.flush()
-      session.commit()
-      session.close()
+    )
+
+    shares = order.shares
+
+    logger.info(f"Finding matching orders for order id {order.orderid}")
+    for order_option in order_options:
+        o = order_option[0] # the order that may be matched...
+        o_fills = sum([f.share for f in o.fill]) # count how many shares been filled
+        o_shares = o.shares + o_fills # number of outstanding shares for that order...
+        logger.info (f"Attempting to match order id {o.orderid}")
+        if o_shares == shares*-1: # if we match all shares remaning!
+            o.status = "filled"
+            order.status = "filled"
+            o_fill = Fill(share=o_shares*-1, orderid=o.orderid,
+                          price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid = order.orderid ) # fill order found
+            o.fill.append(o_fill)
+            order_fill = Fill(share=o_shares, orderid=order.orderid, matchedorderid = o.orderid,
+                              price=order.price, symbol=order.symbol, userid=order.userid) # fill original order
+            order.fill.append(order_fill)
+            logger.info("TOTAL FILL FOR BOTH ORDERS")
+            fix.full_fill(stock=order.symbol, order_id=order.orderid,
+                          price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
+
+            fix.full_fill(stock=o.symbol, order_id=o.orderid,
+                          price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
+
+            fills = -sum([f.share for f in o.fill]) # total shares filled
+            session.add(o)
+            break
+        elif (shares < 0 and o_shares > shares*-1) or\
+            (shares > 0 and o_shares < shares*-1):
+            o.status = "partial_fill"
+            order.status='filled'
+            o_fill = Fill(share=shares, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid) # orderid can be ommitted, orm will fill it in
+            o.fill.append(o_fill)
+            order_fill = Fill(share=shares*-1, price=order.price, symbol=order.symbol, 
+                              userid=order.userid, matchedorderid =o.orderid )
+            order.fill.append(order_fill)
+            logger.info("FILL CURRENT ORDER PARTIAL FILL EXISTING")
+            fills = -sum([f.share for f in o.fill]) # total shares filled
+            fix.partial_fill(stock=o.symbol, order_id=o.orderid, price=o.price,
+                             side=o.side, qty=o.shares, last_order_qty=o_shares, cum_qty=fills, orig_order_id=order.orderid)
+            fix.full_fill(stock=order.symbol, order_id=order.orderid,
+                          price=order.price, side=order.side, qty=order.shares, orig_order_id=o.orderid)
+
+            session.add(o)
+            break
+        elif (shares < 0 and o_shares > 0) or\
+             (shares > 0 and o_shares < 0):  # partial fill
+            o.status="filled"
+            order.status ="partial_fill"
+            o_fill = Fill(share=o_shares*-1, price=o.price, symbol=o.symbol, userid=o.userid, matchedorderid =order.orderid)
+            o.fill.append(o_fill)
+            order_fill= Fill(share=o_shares, price=order.price, symbol=order.symbol, userid=order.userid, matchedorderid = o.orderid)
+            order.fill.append(order_fill)
+            shares = shares + o_shares
+            logger.info("PARTIAL FILL CURRENT ORDER FULL FILL EXISTING")
+            fills = -sum([f.share for f in o.fill]) # total shares filled
+
+            order_fills = -sum([f.share for f in order.fill]) # total shares filled
+            fix.partial_fill(stock=order.symbol, order_id=order.orderid, price=order.price,
+                              side=order.side, qty=order.shares, last_order_qty=o_shares, cum_qty=order_fills, orig_order_id=o.orderid)
+            fix.full_fill(stock=o.symbol, order_id=o.orderid,
+                          price=o.price, side=o.side, qty=o.shares, orig_order_id=order.orderid)
+
+            session.add(o)
+
+    #session.add(order)
+    fills = -sum([f.share for f in order.fill]) # total shares filled
+
+    session.add(order)
+    session.flush()
+    session.commit()
+    session.close()
+
+
+
+
+
+
