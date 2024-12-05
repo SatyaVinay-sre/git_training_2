@@ -20,21 +20,13 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_session():
-    # Create a session and return it
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
 @time_def(log_name="profiler")
 def num_orders(uname: str = None, otype: list = [], symbol: str = None) -> list[dict]:
     symbol = "%" if symbol is None or symbol == "" else symbol+"%"
     and_conditions = [True]  # needs at least one condition
     or_conditions = [False]
 
-    with get_session() as session:
+    with SessionLocal() as session:
         user = None if uname is None or uname == "" else session.execute(select(User).where(User.uname == uname)).fetchone()[0]
 
         if user is not None:
@@ -62,7 +54,7 @@ def num_orders(uname: str = None, otype: list = [], symbol: str = None) -> list[
 
 @time_def(log_name="profiler")
 def get_holdings(uname):
-    with get_session() as session:
+    with SessionLocal() as session:
         user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
         symbols = session.query(Fill.symbol).distinct().filter(Fill.userid == user.userid)
 
@@ -89,7 +81,7 @@ def get_orders_paged(page: int = 1, results: int = 10, uname: str = None, otype:
     and_conditions = [True]
     or_conditions = [False]
 
-    with get_session() as session:
+    with SessionLocal() as session:
         user = None if uname is None or uname == "" else session.execute(select(User).where(User.uname == uname)).fetchone()[0]
 
         if user is not None:
@@ -135,7 +127,7 @@ def get_orders_paged(page: int = 1, results: int = 10, uname: str = None, otype:
 @time_def(log_name="profiler")
 def cancel_order(orderid: str=None) -> bool:
 
-    with get_session() as session:
+    with SessionLocal() as session:
       order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
       if order.status == "filled":
           return False
@@ -164,7 +156,7 @@ def new_order(uname: str = None,
               shares: str = None,
 ) -> bool:
 
-    with get_session() as session:
+    with SessionLocal() as session:
 
       user = session.execute(select(User).where(User.uname == uname)).fetchone()[0]
   
@@ -187,7 +179,7 @@ def new_order(uname: str = None,
 
 @time_def(log_name="profiler")
 def try_fill_order(orderid) -> bool:
-    with get_session() as session:
+    with SessionLocal() as session:
   
       order = session.execute(select(Order).where(Order.orderid == orderid)).fetchone()[0]
   
