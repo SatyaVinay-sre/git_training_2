@@ -54,12 +54,13 @@ def create_tables() -> None:
     except Exception as e:
         logger.error("Error occurred while creating tables:", exc_info=True)
 
-def create_admin(admin_role: Role = None) -> None:
+def create_admin(admin_role_name: str) -> None:
     session = Session(create_engine(mysql_conn_str()).connect())
 
-    # Ensure the admin_role is valid
+    # Query the Role table to get the Role object
+    admin_role = session.query(Role).filter_by(name=admin_role_name).first()
     if not admin_role:
-        raise ValueError("admin_role must be provided")
+        raise ValueError(f"Role '{admin_role_name}' does not exist in the database")
 
     # Update or create user 'admin'
     user1 = session.query(User).filter_by(uname="admin").first()
@@ -88,6 +89,7 @@ def create_admin(admin_role: Role = None) -> None:
         session.add(user2)
 
     session.commit()
+
 
 
 
