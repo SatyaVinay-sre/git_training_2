@@ -1,5 +1,5 @@
 -- Create User Table
-CREATE TABLE User (
+CREATE TABLE IF NOT EXISTS User (
     userid INT PRIMARY KEY AUTO_INCREMENT,
     uname VARCHAR(45) UNIQUE,
     password VARCHAR(45),
@@ -7,13 +7,13 @@ CREATE TABLE User (
 );
 
 -- Create Role Table
-CREATE TABLE Role (
+CREATE TABLE IF NOT EXISTS Role (
     roleid INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(24) UNIQUE
 );
 
 -- Create UserRoles Bridge Table (Many-to-Many between User and Role)
-CREATE TABLE UserRoles (
+CREATE TABLE IF NOT EXISTS UserRoles (
     roleid INT,
     userid INT,
     PRIMARY KEY (roleid, userid),
@@ -22,7 +22,7 @@ CREATE TABLE UserRoles (
 );
 
 -- Create Product Table
-CREATE TABLE Product (
+CREATE TABLE IF NOT EXISTS Product (
     symbol VARCHAR(16) PRIMARY KEY,
     price DECIMAL(15, 2),
     productType VARCHAR(12),
@@ -31,7 +31,7 @@ CREATE TABLE Product (
 );
 
 -- Create Order Table
-CREATE TABLE `Order` (
+CREATE TABLE IF NOT EXISTS `Order` (
     orderid INT PRIMARY KEY AUTO_INCREMENT,
     userid INT,
     symbol VARCHAR(16),
@@ -45,7 +45,7 @@ CREATE TABLE `Order` (
 );
 
 -- Create Fill Table
-CREATE TABLE Fill (
+CREATE TABLE IF NOT EXISTS Fill (
     fillid INT PRIMARY KEY AUTO_INCREMENT,
     orderid INT,
     userid INT,
