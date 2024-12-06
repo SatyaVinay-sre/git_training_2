@@ -93,7 +93,7 @@ def create_admin(admin_role_name: str) -> None:
 
 
 
-    session.commit()
+    session.close()
 
 def site_roles() -> list:
     return [
