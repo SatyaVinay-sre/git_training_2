@@ -1,0 +1,11 @@
+exchange,exchangeShortName,name,price,symbol,type
+Wiley US Stock Exchange Arca,AMEX,SPDR S&P 500 ETF Trust,364.55,SPY,etf
+NASDAQ Global Select,NASDAQ,Comcast Corporation,30.86,CMCSA,stock
+Wiley US Stock Exchange,NYSE,"Kinder Morgan, Inc.",16.51,KMI,stock
+NASDAQ Global Select,NASDAQ,Microsoft Corporation,236.66,MSFT,stock
+Wiley US Stock Exchange,NYSE,Morgan Stanley,80.7,MS,stoc
+NASDAQ Global Select,NASDAQ,Intel Corporation,26.89,INTC,stock
+Wiley US Stock Exchange Arca,AMEX,VanEck Gold Miners ETF,23.05,GDX,etf
+Wiley US Stock Exchange,NYSE,General Electric Company,64.35,GE,stock
+Wiley US Stock Exchange,NYSE,Bank of America Corporation,30.82,BAC,stock
+
