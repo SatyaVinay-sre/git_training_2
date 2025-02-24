@@ -1,0 +1,80 @@
+1. How would you create a new user account in Linux?
+sudo useradd -m username
+sudo passwd username
+
+2. Difference Between Relative and Absolute Paths
+Absolute Path: The complete path from the root directory (/). E.g., /home/user/documents/file.txt
+Relative Path: The path relative to the current working directory. E.g., documents/file.txt
+3. Command to Change File Ownership
+sudo chown new_owner : new_group filename
+
+4. Schedule a Task to Run Automatically
+crontab -e
+Ex:
+0 5 * * * /path/to/script.sh (every day at 5 AM)
+5. Compress and Decompress Files
+Compress:
+tar -czvf archive.tar.gz /path/to/directory
+
+Decompress:
+tar -xzvf archive.tar.gz
+
+6. Purpose of 'grep' Command
+grep 'search_term' filename
+
+7. Check and Manage Running Processes
+View running processes:
+top
+
+Kill a process:
+kill PID
+
+8. Set Up a Basic Firewall Using iptables
+Don’t know
+9. Check System Resource Usage
+htop
+
+10. Create and Manage Symbolic Links
+Don’t know
+
+11. Mounting and Unmounting File Systems(should practice)
+Mount:
+sudo mount /dev/sdX /mnt
+Unmount:
+sudo umount /mnt
+
+12. Difference Between 'sudo' and 'su'
+sudo: Executes a command as another user (default is root).
+su: Switches to another user account entirely.
+13. Search for Files Larger Than a Specific Size
+find / -type f -size +100M
+
+14. Redirect Output to a File and Append
+Redirect output:
+command > file.txt
+
+Append output:
+command >> file.txt
+
+15. View Real-Time Log Entries
+tail -f /var/log/syslog
+
+16. Check and Modify File Permissions Recursively
+chmod -R 755 /path/to/directory
+
+17. Use 'find' Command to Locate Files
+find /path -name "filename"
+
+18. Purpose of '/etc/fstab' File
+Don’t know
+
+19. Check and Manage Available Swap Space
+Don’t know
+20. Use 'tar' for Backup and Restore
+Backup:
+tar -cvpzf backup.tar.gz /path/to/directory
+
+Restore:
+tar -xvpzf backup.tar.gz -C /destination/path
+
+
